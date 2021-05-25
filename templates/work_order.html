@@ -12,9 +12,9 @@
 <body>
     <h1>Welcome to the work_order select page</h1>
 </body>
-<form method='post' action={{ url_for('date') }} enctype="multipart/form-data">
+<form method='post' action={{ url_for('work_order') }} enctype="multipart/form-data">
     {% for item in wos %}
-    <input type="checkbox" name= item value=item >{{item.name}}<br>
+    <input type="checkbox" name= "work_order" value={{item.index}} >{{item.name}}<br>
     {% endfor %}
     <p>
         <button type='submit'>Submit</button>

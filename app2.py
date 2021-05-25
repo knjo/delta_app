@@ -31,7 +31,10 @@ model_path = "model\\"
 KP = ['603','601','602','600','599','291','221','114','28','96','98','99','102','128','132','255','461','462','463','464','467','468','469','470','482','481','487','488','493','494','565','566','567','568','564']
 defects = [0,5,6,7]
 split_size = 0.4
-
+# global variable
+wos = None
+wos_reply = None
+load_flag = True
 
 # funtion 
 def input_check(data1, data2):
@@ -68,13 +71,14 @@ def login():
 
 @app.route('/date', methods=['GET', 'POST'])
 def date():
+    global wos 
     if request.method == 'POST':
         if input_check(request.form['startTime'], request.form['endTime']):
             wos_query = Wos_query(request.form['startTime'],request.form['endTime'])
             print (wos_query.json_file)
             flash('Updload Success!')
-            with open('wos_api.json') as f:
-                data = json.load(f)
+            with open('wos_api.json',encoding="utf-8") as f:
+                wos = json.load(f)
             return redirect(url_for('work_order'))
         else :
             return 'bye'
@@ -82,25 +86,23 @@ def date():
     
 @app.route('/work_order', methods=['GET', 'POST'])
 def work_order():
-    wos = [
-        {
-            'name':'test1',
-            'place': 'kaka',
-        },
-        {
-            'name': 'test2',
-            'place': 'Goa',
-        }
-    ]
+    global wos, load_flag , wos_reply
+    if load_flag == True :
+        wos_reply = Wos_reply(wos)
+        wos  =  wos_reply.wos_list_html
+        load_flag = False
+
     if request.method == 'POST':
-        if input_check(request.form['startTime'], request.form['endTime']):
-            wos_query = Wos_query(request.form['startTime'],request.form['endTime'])
-            print (wos_query.json_file)
-            flash('Updload Success!')
-            
-            #return render_template('work_order.html', wos = wos)
+        if len(request.form.getlist('work_order')) > 0 :
+            wos_reply.to_json(request.form.getlist('work_order'))
+            if wos_reply.sameID_flag == False :
+                flash('Plese work orders in same itemID and eqipID !')
+            else :
+                flash('Successed in selecting work order !')
+            print (wos_reply.json_file)
+
         else :
-            return 'bye'
+            flash('Plese select at least one work order!')
     return render_template('work_order.html', wos = wos)
 
 
