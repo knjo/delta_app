@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<script>var a=99;</script>
+{% endblock head %}
+{% block title %}Login{% endblock title %}
+{% block content%}
+
+<body>
+    <h1>Welcome to the date select page</h1>
+</body>
+<form method='post' action={{ url_for('date') }} enctype="multipart/form-data">
+    Start Date :   
+    <p>
+        <input id="startTime" name="startTime" type="date">
+    </p>
+    End Date :   
+    <p>
+        <input id="endTime" name="endTime" type="date">
+    </p>
+        <p>
+        <button type='submit'>Submit</button>
+    </p>
+</form>
+{% endblock content%}

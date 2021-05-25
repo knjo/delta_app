@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<script>var a=99;</script>
+{% endblock head %}
+{% block title %}Login{% endblock title %}
+{% block content%}
+<form method='post' action={{ url_for('login') }} enctype="multipart/form-data">
+    equip ID :   
+    <p>
+        <input type='text' name='equip'>
+    </p>
+    mold ID :
+        <p>
+        <input type="text" name="mold">
+    </p>
+    model name :
+        <p>
+    <input type="text" name="name">
+    </p>
+    Chose a json file :
+        <p>
+        <input type="file" name="data" id="file-uploader" data-target="file-uploader" accept=".json" />
+    </p>
+        <p>
+        <button type='submit'>Submit</button>
+    </p>
+</form>
+{% endblock content%}

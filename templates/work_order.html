@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<script>var a=99;</script>
+{% endblock head %}
+{% block title %}Login{% endblock title %}
+{% block content%}
+
+<script>
+    var wos = { wos }
+</script>
+<body>
+    <h1>Welcome to the work_order select page</h1>
+</body>
+<form method='post' action={{ url_for('date') }} enctype="multipart/form-data">
+    {% for item in wos %}
+    <input type="checkbox" name= item value=item >{{item.name}}<br>
+    {% endfor %}
+    <p>
+        <button type='submit'>Submit</button>
+    </p>
+</form>
+{% endblock content%}
