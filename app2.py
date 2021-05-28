@@ -13,7 +13,9 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from network import network, training
 from datapreprocess import DataPreprocess
-from api_handler import Wos_query , Wos_reply
+from api_handler import Sample_reply, Wos_query , Wos_reply
+import requests
+import time
 
 
 app = Flask(__name__)
@@ -28,21 +30,23 @@ KP = KP.reset_index(drop = True)
 data_path = "data\\"
 model_path = "model\\"
 
-KP = ['603','601','602','600','599','291','221','114','28','96','98','99','102','128','132','255','461','462','463','464','467','468','469','470','482','481','487','488','493','494','565','566','567','568','564']
-defects = [0,5,6,7]
+
+defects = [0,1]
 split_size = 0.4
 # global variable
 wos = None
 wos_reply = None
+sample_reply = None
 load_flag = True
-
+headers = {'Content-Type': 'application/json', 'Accept':'application/json'}
+wos_url = "http://e8ef412f72e5.ngrok.io/api/v1/ai/getWOs"
+sample_url = 'http://e8ef412f72e5.ngrok.io/api/v1/ai/getSamples'
 # funtion 
 def input_check(data1, data2):
     if data1 != '' and data2 != '':
         return True
     else:
         return False
-
 
 
 # about route
@@ -71,14 +75,18 @@ def login():
 
 @app.route('/date', methods=['GET', 'POST'])
 def date():
-    global wos 
+    global wos ,headers ,wos_reply
     if request.method == 'POST':
         if input_check(request.form['startTime'], request.form['endTime']):
             wos_query = Wos_query(request.form['startTime'],request.form['endTime'])
             print (wos_query.json_file)
+            
+            r = requests.post( wos_url, headers = headers , data= wos_query.json_file ,timeout=3)
+            
+            print(r)
             flash('Updload Success!')
-            with open('wos_api.json',encoding="utf-8") as f:
-                wos = json.load(f)
+            wos = r.json()
+            wos_reply = Wos_reply(wos)
             return redirect(url_for('work_order'))
         else :
             return 'bye'
@@ -86,11 +94,9 @@ def date():
     
 @app.route('/work_order', methods=['GET', 'POST'])
 def work_order():
-    global wos, load_flag , wos_reply
-    if load_flag == True :
-        wos_reply = Wos_reply(wos)
-        wos  =  wos_reply.wos_list_html
-        load_flag = False
+    global wos, load_flag , wos_reply ,headers ,sample_reply ,model_path
+
+    wos  =  wos_reply.wos_list_html
 
     if request.method == 'POST':
         if len(request.form.getlist('work_order')) > 0 :
@@ -99,6 +105,17 @@ def work_order():
                 flash('Plese work orders in same itemID and eqipID !')
             else :
                 flash('Successed in selecting work order !')
+                r = requests.post( sample_url , headers = headers , data= wos_reply.json_file ,timeout=300)            
+                print(r)
+                with open('sample2.json', 'w') as outfile:
+                    json.dump(r.json(), outfile)
+                
+                sample_reply = Sample_reply(r.json() , data_path , wos_reply.sampleName )
+                data = DataPreprocess(sample_reply.feature_path, sample_reply.defect_path, sample_reply.KP, defects, split_size)
+                net = training(data.X_train,data.y_train,data.X_valid,data.y_valid)
+                Model_path = model_path +  wos_reply.sampleName 
+                torch.save(net.state_dict(), Model_path)
+                flash('Traning Completed!')
             print (wos_reply.json_file)
 
         else :
@@ -106,9 +123,6 @@ def work_order():
     return render_template('work_order.html', wos = wos)
 
 
-@app.route('/hello/<username>')
-def hello(username):
-    return render_template('hello.html', username=username)
 
 if __name__ == '__main__':
     app.debug = True

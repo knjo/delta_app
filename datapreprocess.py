@@ -4,18 +4,19 @@ from sklearn.model_selection import train_test_split
 from torch.functional import split
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
+import numpy as np
 
 
 
 class DataPreprocess:
-    def __init__(self,data_path,defect_path,select_columns,defects,split_size=0.4):
+    def __init__(self,data_path,defect_path,select_columns,split_size=0.4):
         self.data_path = data_path
         self.defect_path = defect_path
         self.select_columns = select_columns
-        self.defects = defects
         self.split_size = split_size
         self.load()
         self.defect_relabel()
+        self.Standardization()
         self.data_split()
         self.ROS()
 
@@ -36,31 +37,34 @@ class DataPreprocess:
     
     def Standardization(self):
         self.sc = StandardScaler()
-        self.sc.fit(self.X_train)
-        self.X_train = self.sc.transform(self.X_train)
+        self.sc.fit(self.df_select.values[:,:])
+        self.df_select_std = self.sc.transform(self.df_select)
+        self.df_select_std = pd.DataFrame(self.df_select_std)
+        print(self.df_select)
+        print("====================")
+        print(self.df_select_std)
+        print("====================")
 
 
 
-
-        
     def defect_relabel(self):
-        """
+        print("Defect relabel Value counts = \n{}".format(self.df_defect['defect'].value_counts()))
+        print("====================")
+        self.defects = np.unique(self.df_defect['defect'])
+        print("self.defects = {}".format(self.defects))
         for i in range(len(self.defects)):
             self.df_defect[self.df_defect.values == self.defects[i]] = i
-        """
-        self.df_defect[self.df_defect.values > 0 ] = 1
-        #self.df_defect[self.df_defect.values > (len(self.defects)-1)] = 0
+        
+        self.df_defect[self.df_defect.values > (len(self.defects)-1)] = 0
         print("Defect relabel Value counts = \n{}".format(self.df_defect['defect'].value_counts()))
         print("====================")
 
 
-        
     def data_split(self):
         train_end_idx = len(self.df_defect)
-        self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.df_select.values[:train_end_idx,:],self.df_defect.values[:train_end_idx], test_size=0.4)
+        self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.df_select_std.values[:train_end_idx,:],self.df_defect.values[:train_end_idx], test_size=0.4)
         print("X_train.shape = {}, y_train.shape = {}\nX_valid.shape = {}, y_valid.shape={}".format(self.X_train.shape, self.y_train.shape,self.X_valid.shape, self.y_valid.shape))
         print("====================")
-
 
 
 
@@ -68,7 +72,6 @@ class DataPreprocess:
 if __name__ == "__main__":
     data_path = "E11M47_0405.csv"
     defect_path = "E11M47_defect_0405.csv"
-    defects = [0,5,6,7]
-    select_col = ['603','601','602','600','599','291','221','114','28','96','98','99','102','128','132','255','461','462','463','464','467','468','469','470','482','481','487','488','493','494','565','566','567','568','564']
+    select_col = ['603','601','602','600','599','291','221','114','28','96','98','99','102','104','128','132','255','461','462','463','464','467','468','469','470','471','482','481','487','488','493','494','565','566','567','568','564']
     split_size = 0.4
-    data = DataPreprocess(data_path,defect_path,select_col,defects,split_size)
+    data = DataPreprocess(data_path,defect_path,select_col,split_size)
