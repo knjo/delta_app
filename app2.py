@@ -9,8 +9,6 @@ from tqdm import tqdm as tqdm #pip install tqdm
 #import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
 from network import network, training
 from datapreprocess import DataPreprocess
 from api_handler import Sample_reply, Wos_query , Wos_reply
@@ -31,7 +29,6 @@ data_path = "data\\"
 model_path = "model\\"
 
 
-defects = [0,1]
 split_size = 0.4
 # global variable
 wos = None
@@ -50,6 +47,7 @@ def input_check(data1, data2):
 
 
 # about route
+"""
 @app.route('/BuildModel', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -72,21 +70,28 @@ def login():
         else :
             return 'bye'
     return render_template('login.html')
+    """
 
 @app.route('/date', methods=['GET', 'POST'])
 def date():
     global wos ,headers ,wos_reply
     if request.method == 'POST':
         if input_check(request.form['startTime'], request.form['endTime']):
-            wos_query = Wos_query(request.form['startTime'],request.form['endTime'])
+            wos_query = Wos_query(request.form['startTime'], request.form['endTime'])
             print (wos_query.json_file)
-            
+
+
+            with open('wos_api.json',encoding="utf-8") as f:
+                wos = json.load(f)
+                wos_reply = Wos_reply(wos)            
+            """    
             r = requests.post( wos_url, headers = headers , data= wos_query.json_file ,timeout=3)
-            
+
             print(r)
             flash('Updload Success!')
             wos = r.json()
             wos_reply = Wos_reply(wos)
+            """
             return redirect(url_for('work_order'))
         else :
             return 'bye'
@@ -102,19 +107,32 @@ def work_order():
         if len(request.form.getlist('work_order')) > 0 :
             wos_reply.to_json(request.form.getlist('work_order'))
             if wos_reply.sameID_flag == False :
+               
                 flash('Plese work orders in same itemID and eqipID !')
             else :
                 flash('Successed in selecting work order !')
-                r = requests.post( sample_url , headers = headers , data= wos_reply.json_file ,timeout=300)            
-                print(r)
-                with open('sample2.json', 'w') as outfile:
-                    json.dump(r.json(), outfile)
-                
-                sample_reply = Sample_reply(r.json() , data_path , wos_reply.sampleName )
-                data = DataPreprocess(sample_reply.feature_path, sample_reply.defect_path, sample_reply.KP, defects, split_size)
+                sample_list = []
+                print (wos_reply.json_file)
+                for i in wos_reply.json_file:
+                    print(i)
+                    with open('sample_api.json',encoding="utf-8") as f:
+                        r = json.load(f)[0]
+                        sample_list.append(r)
+                    break
+                    """
+                    r = requests.post( sample_url , headers = headers , data= i ,timeout=30)            
+                    print(r)
+                    with open('sample_api.json', 'w') as outfile:
+                        json.dump(r.json(), outfile)
+                    """
+                    
+                #sample_reply = Sample_reply(r.json() , data_path , wos_reply.sampleName )
+                sample_reply = Sample_reply(sample_list , data_path , wos_reply.sampleName )
+                data = DataPreprocess(sample_reply.feature_path, sample_reply.defect_path, sample_reply.KP, split_size)
                 net = training(data.X_train,data.y_train,data.X_valid,data.y_valid)
                 Model_path = model_path +  wos_reply.sampleName 
                 torch.save(net.state_dict(), Model_path)
+
                 flash('Traning Completed!')
             print (wos_reply.json_file)
 

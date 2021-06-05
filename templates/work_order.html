@@ -15,7 +15,7 @@
 <form method='post' action={{ url_for('work_order') }} enctype="multipart/form-data">
     {% for item in wos %}
     <input type="checkbox" name= "work_order" value={{item.index}} >{{item.name}}<br>
-    &emsp;&nbsp; {{item.time}}<br>
+    &emsp; {{item.time}}<br>
     {% endfor %}
     <p>
         <button type='submit'>Submit</button>
